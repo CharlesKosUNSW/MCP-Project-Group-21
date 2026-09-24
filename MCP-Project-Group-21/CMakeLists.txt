@@ -23,6 +23,15 @@ set(PROJECT_NAME MCP-Project-Group-21)
 # Create an executable object type
 add_executable(${PROJECT_NAME})
 
+find_program(OBJCOPY arm-none-eabi-objcopy)
+
+add_custom_command(
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${OBJCOPY} -O ihex $<TARGET_FILE:${PROJECT_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.hex
+  COMMENT "Generating HEX file"
+)
+
 # Include additional CMake files for flags, components, and files
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/flags.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/components.cmake)
@@ -31,11 +40,24 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/files.cmake)
 # Add sources to executable/library
 target_sources(${PROJECT_NAME} PRIVATE
   # User defined sources
+  "Src/G474RE_Drivers/uart.c"
+  "Src/Kobuki_Drivers/kobuki.c"
+  "Src/ADC/ADC.c"
+  "Src/Ultrasonic/Ultrasonic.c"
 )
 
 # Add include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
   # User defined include directories
+  Src/Kobuki_Drivers
+  Src/G474RE_Drivers
+  Src/ADC
+  Src/Ultrasonic
+  Inc/drivers/CMSIS/Core/Include
+  Inc/drivers/BSP/STM32G4xx_Nucleo
+  Inc/drivers/STM32G4xx_HAL_Driver/Inc
+  Inc/drivers/Core/Inc
+  Inc/drivers/CMSIS/Device/ST/STM32G4xx/Include
 )
 
 # Compiler options
@@ -46,6 +68,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 # Add additional defined symbols
 target_compile_definitions(${PROJECT_NAME} PRIVATE
   # Add additional defined symbols here
+  STM32G4xx
+  USE_HAL_DRIVER
 )
 
 # Linker options

@@ -17,6 +17,12 @@
  */
 
 #include <stdint.h>
+#define STM32G474xx
+#include "stm32g4xx.h"
+#include "adc.h" // New Header
+#include "kobuki.h"
+#include "uart.h"
+#include "ultrasonic.h" // New Header
 
 int main(void)
 {
