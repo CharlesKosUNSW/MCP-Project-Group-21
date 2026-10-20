@@ -5,16 +5,7 @@
 #include "kobuki.h"
 #include <stdlib.h> // include this at the top
 
-// Parameters for distance and angle calculation
-// These can be placed in kobuki .h:
-#define PI                      (3.14159)
-#define WHEEL_RADIUS            (35.0) // mm
-#define REVOLUTIONS_PER_TICK    (132.0/6545.0) /52.0
-#define MM_PER_TICK             (2.0 * PI * WHEEL_RADIUS * REVOLUTIONS_PER_TICK)
-#define DEG_PER_TICK            (1.0/100.0)
-#define GAIN_ROTATE             (1.0/0.90)
-#define GAIN_DRIVE              (100.0/100.0)
-#define sign(x)                 ((int8_t)((x) >= 0 ? 1 : -1))
+
 
 // static variables and flags , keep these here in kobuki .c
 static volatile int32_t setpoint_distance_tick;

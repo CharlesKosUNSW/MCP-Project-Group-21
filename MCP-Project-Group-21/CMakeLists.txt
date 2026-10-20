@@ -44,6 +44,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   "Src/Kobuki_Drivers/kobuki.c"
   "Src/ADC/ADC.c"
   "Src/Ultrasonic/Ultrasonic.c"
+  "Src/SearchFSM/SearchFSM.c"
 )
 
 # Add include directories
@@ -53,6 +54,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   Src/G474RE_Drivers
   Src/ADC
   Src/Ultrasonic
+  Src/SearchFSM
   Inc/drivers/CMSIS/Core/Include
   Inc/drivers/BSP/STM32G4xx_Nucleo
   Inc/drivers/STM32G4xx_HAL_Driver/Inc

@@ -23,6 +23,7 @@
 #include "kobuki.h"
 #include "uart.h"
 #include "ultrasonic.h"
+#include "SearchFSM.h"
 
 /* Kobuki button values */
 # define BUTTON_0_START 0x01U
@@ -30,7 +31,7 @@
 # define BUTTON_2_ROTATE 0x04U
 
 // Logic
-# define NULL 0
+# define FALSE 0
 # define TRUE 1
 // States
 
@@ -41,6 +42,13 @@ static enum {
     AVOID, 
     OBJECT 
 } state ;
+
+typedef enum {
+    SCAN, 
+    OBJDETECT,
+    OBJINVESTIGATE, 
+    BOLLARDFOUND 
+} SearchFSM_State;
 
 int main(void) {
     // Both of these only for testing purposes . Not required
@@ -59,7 +67,7 @@ int main(void) {
 
     while (1){
         Kobuki_Read(&kobuki);
-        Ultrasonic_Detect (&object);
+        Ultrasonic_Detect(&object);
         // Both of these only for testing purposes . Not required
         ultrasonic_read = Ultrasonic_Read ();
         adc_read = ADC_Read ( ADC_CHANNEL_1 );
@@ -89,12 +97,15 @@ int main(void) {
                 break;
 
             case SEARCH:
-                if ((kobuki.wheeldrop != NULL ) | ((kobuki.bumper + kobuki.cliff ) != NULL ) | (kobuki.rotation_complete == TRUE ) | (kobuki.distance_complete == TRUE )){
+                // Parent only handles emergencies. Cliff and bumper are handled in search FSM
+                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
                     state = IDLE;
                     led_1 = YELLOW;
-                } else {
-                    Kobuki_Rotate_Angle (kobuki.angle);
-                    // Kobuki_Drive_Distance ( kobuki . distance );
+                    Kobuki_Drive(STOP);
+                } else if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
+                    state = OBSTACLE;
+                    led_1 = GREEN;
+                    Kobuki_Drive(STOP);
                 }
                 break ;
 
