@@ -5,7 +5,8 @@
 
 // Search parameters
 #define INVESTIGATE_DIST_MM     100     // mm. Distance to drive forward to investigate object
-#define DETECT_RANGE_MM         400     // mm. Distance max threshold for object detection 
+#define DETECT_RANGE_MM         600     // mm. Distance max threshold for object detection 
+#define ROUTE_THRESHOLD_MM      475     // mm. Distance threshold for route planning
 #define BOLLARD_TURN_DEG        90      // deg (+ ve is CCW ). 
 #define EXTERNAL_MARGIN_DEG     20      // deg. Extra turn so object is not detected again
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
@@ -33,6 +34,13 @@ static int32_t midpoint_angle_ticks;    // midpoint of sweep angle, used to rota
 static int32_t setpoint_angle_ticks;    // angle to rotate to after object detected
 static uint16_t start_distance_ticks;   // distance when investigate started
 static int16_t travelled_dist_mm;       // distance travelled before cliff
+static uint16_t range_mm;               // distance to object when detected
+static Course_Route Course;             // current course
+
+// Getter function for course type
+Course_Route SearchFSM_Get_Course(void) {
+    return Course;
+}
 
 // Wrap angle difference to [ -18000 ,18000] ticks
 static int32_t Wrap_Angle(int32_t angle_tick) {
@@ -47,10 +55,12 @@ static int32_t Wrap_Angle(int32_t angle_tick) {
     return angle_tick ;
 }
 
+// Reset search FSM to initial state. Called when entering search state from main FSM
 void SearchFSM_Reset(void) {
     search_state = SCAN;
 }
 
+// Run one step of search FSM , call every loop while in SEARCH in main FSM
 SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
     switch(search_state){
         case SCAN:
@@ -89,6 +99,7 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
                 Kobuki_Rotate_Angle(kobuki->angle);
             } else {
                 // Once aligned, transition to investigate state
+                range_mm = object->range_mm;
                 start_distance_ticks = kobuki->distance;
                 Kobuki_Drive_Distance_Setpoint(kobuki->distance, INVESTIGATE_DIST_MM);
                 search_state = OBJECT_INVESTIGATE;
@@ -104,6 +115,13 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
                 Kobuki_Drive_Distance_Setpoint(kobuki->distance , -travelled_dist_mm);
                 search_state = EXTERNAL_REVERSE ;
             } else if (kobuki->distance_complete == 1){
+                // Determine the course type
+                if (range_mm > ROUTE_THRESHOLD_MM){
+                    Course = ROUTE_A;
+                } else {
+                    Course = ROUTE_B;
+                }
+
                 // Object is bollard. Reverse back to original position
                 Kobuki_Drive_Distance_Setpoint(kobuki->distance , -INVESTIGATE_DIST_MM);
                 search_state = BOLLARD_REVERSE;
@@ -143,7 +161,11 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
                 Kobuki_Drive_Distance(kobuki->distance);    
             } else {
                 // Reverse complete. Set rotation point to drive away from the bollard
-                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, BOLLARD_TURN_DEG);
+                if (Course == ROUTE_A){
+                    Kobuki_Rotate_Angle_Setpoint(kobuki->angle, -BOLLARD_TURN_DEG);
+                } else {
+                    Kobuki_Rotate_Angle_Setpoint(kobuki->angle, BOLLARD_TURN_DEG);
+                }
                 search_state = BOLLARD_ROTATE ;    
             }
             break;
