@@ -25,7 +25,7 @@
 #include "ultrasonic.h"
 #include "SearchFSM.h"
 #include "OrientFSM.h"
-#include "PathFindFSM.h"
+#include "PathfindFSM.h"
 #include "StorageFSM.h"
 #include "DepositFSM.h"
 
@@ -47,6 +47,7 @@ static enum {
     STORAGE,
     DEPOSIT
 } MainFSM_State ;
+
 
 int main(void) {
     // Both of these only for testing purposes . Not required
@@ -71,72 +72,100 @@ int main(void) {
         adc_read = ADC_Read ( ADC_CHANNEL_1 );
         Kobuki_Update_LEDs (led_1 , led_2 );
 
+        // Emergency stop , applies to every state except IDLE
+        if ((MainFSM_State != IDLE) && ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP))){
+            MainFSM_State = IDLE;
+            Kobuki_Drive(STOP);
+        }
+
         // A TEST FSM
         switch(MainFSM_State){
             case IDLE:
+
+                // Set LED's for IDLE state
+                led_1 = GREEN;
+                led_2 = OFF;
+
+                if(kobuki.button == BUTTON_0_START){
+                    SearchFSM_Reset();      // Reset search sub FSM to initial state 
+                    MainFSM_State = SEARCH;
+                } else {
+                    Kobuki_Drive(STOP);
+                }
+
+                /*
                 if(kobuki.button == BUTTON_0_START){
                     MainFSM_State = SEARCH;
-                    led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint(kobuki .angle,450);
                     // Kobuki_Drive_Distance_Setpoint ( kobuki.distance ,100) ;
                 } else if ( kobuki.button == BUTTON_1_STOP ){
                     MainFSM_State = SEARCH ;
-                    led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint ( kobuki .angle, 270) ;
                     // Kobuki_Drive_Distance_Setpoint ( kobuki.distance , -100) ;
                 } else if (kobuki.button == BUTTON_2_ROTATE){
-                    MainFSM_State = SEARCH ;
-                    led_1 = RED;
+                    MainFSM_State = SEARCH;
                     Kobuki_Rotate_Angle_Setpoint ( kobuki .angle , 90);
                     // Kobuki_Drive_Distance_Setpoint ( kobuki . distance ,1000) ;
-                } else {
-                    Kobuki_Drive(STOP);
                 }
+                    else {
+                    Kobuki_Drive(STOP);
+                }*/
+
                 break;
 
             case SEARCH:
-                // Parent only handles emergencies. Cliff and bumper are handled in search FSM
-                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    MainFSM_State = IDLE;
-                    led_1 = YELLOW;
-                    Kobuki_Drive(STOP);
-                } 
+
+                // Set LED's for SEARCH state
+                led_1 = YELLOW;
+                led_2 = OFF;
+
                 // Run SearchFSM each loop. Once it returns SEARCH_DONE, transition to ORIENT state
-                else if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
+                if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
                     MainFSM_State = ORIENT;
-                    led_1 = GREEN;
                     Kobuki_Drive(STOP);
                 }
                 break;
 
             case ORIENT:
-                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    MainFSM_State = IDLE;
-                    led_1 = YELLOW;
+                // Set LED's for ORIENT state
+                led_1 = RED;
+                led_2 = OFF;
+
+                if (OrientFSM_Run(&kobuki, &object) == ORIENT_SUCCESS){
+                    MainFSM_State = PATHFIND;
                     Kobuki_Drive(STOP);
                 }
                 break;
             
             case PATHFIND:
-                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    MainFSM_State = IDLE;
-                    led_1 = YELLOW;
+                // Set LED's for PATHFIND state
+                led_1 = GREEN;
+                led_2 = GREEN;
+
+                if (PathfindFSM_Run(&kobuki, &object) == PATHFIND_DONE){
+                    MainFSM_State = STORAGE;
                     Kobuki_Drive(STOP);
                 }
                 break;  
 
             case STORAGE:
-                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    MainFSM_State = IDLE;
-                    led_1 = YELLOW;
+                // Set LED's for STORAGE state
+                led_1 = YELLOW;
+                led_2 = YELLOW;
+
+                if (StorageFSM_Run(&kobuki, &object) == STORAGE_DONE){
+                    MainFSM_State = DEPOSIT;
                     Kobuki_Drive(STOP);
                 }
                 break;  
 
             case DEPOSIT:
-                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
+                // Set LED's for DEPOSIT state
+                led_1 = RED;
+                led_2 = RED;
+
+                if (DepositFSM_Run(&kobuki, &object) == DEPOSIT_DONE){
                     MainFSM_State = IDLE;
-                    led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 }
                 break;  
