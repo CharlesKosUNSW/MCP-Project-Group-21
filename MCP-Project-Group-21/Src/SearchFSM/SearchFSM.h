@@ -22,6 +22,6 @@ void SearchFSM_Reset(void);
 Course_Route SearchFSM_Get_Course(void);
 
 // Run one step of search FSM , call every loop while in SEARCH
-SearchFSM_Result SearchFSM_Run ( Kobuki_Typedef *kobuki , US_Typedef *object );
+SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki , US_Typedef *object );
 
 #endif

@@ -24,6 +24,10 @@
 #include "uart.h"
 #include "ultrasonic.h"
 #include "SearchFSM.h"
+#include "OrientFSM.h"
+#include "PathFindFSM.h"
+#include "StorageFSM.h"
+#include "DepositFSM.h"
 
 /* Kobuki button values */
 # define BUTTON_0_START 0x01U
