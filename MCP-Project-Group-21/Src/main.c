@@ -103,7 +103,9 @@ int main(void) {
                     state = IDLE;
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
-                } else if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
+                } 
+                // Run SearchFSM each loop. Once it returns SEARCH_DONE, transition to ORIENT state
+                else if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
                     state = ORIENT;
                     led_1 = GREEN;
                     Kobuki_Drive(STOP);
