@@ -38,9 +38,10 @@
 static enum {
     IDLE, 
     SEARCH,
-    OBSTACLE, 
-    AVOID, 
-    OBJECT 
+    ORIENT,
+    PATHFIND,
+    STORAGE,
+    DEPOSIT
 } state ;
 
 typedef enum {
@@ -81,12 +82,12 @@ int main(void) {
                     led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint(kobuki .angle,450);
                     // Kobuki_Drive_Distance_Setpoint ( kobuki.distance ,100) ;
-                } else if ( kobuki . button == BUTTON_1_STOP ){
+                } else if ( kobuki.button == BUTTON_1_STOP ){
                     state = SEARCH ;
                     led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint ( kobuki .angle, 270) ;
                     // Kobuki_Drive_Distance_Setpoint ( kobuki.distance , -100) ;
-                } else if ( kobuki . button == BUTTON_2_ROTATE ){
+                } else if (kobuki.button == BUTTON_2_ROTATE){
                     state = SEARCH ;
                     led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint ( kobuki .angle , 90);
@@ -103,20 +104,44 @@ int main(void) {
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 } else if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
-                    state = OBSTACLE;
+                    state = ORIENT;
                     led_1 = GREEN;
                     Kobuki_Drive(STOP);
                 }
-                break ;
-
-            case OBSTACLE:
                 break;
 
-            case AVOID:
+            case ORIENT:
+                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
+                    state = IDLE;
+                    led_1 = YELLOW;
+                    Kobuki_Drive(STOP);
+                }
                 break;
+            
+            case PATHFIND:
+                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
+                    state = IDLE;
+                    led_1 = YELLOW;
+                    Kobuki_Drive(STOP);
+                }
+                break;  
 
-            case OBJECT:
-                break;
+            case STORAGE:
+                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
+                    state = IDLE;
+                    led_1 = YELLOW;
+                    Kobuki_Drive(STOP);
+                }
+                break;  
+
+            case DEPOSIT:
+                if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
+                    state = IDLE;
+                    led_1 = YELLOW;
+                    Kobuki_Drive(STOP);
+                }
+                break;  
+
         }
     }
 }
