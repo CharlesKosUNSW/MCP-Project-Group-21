@@ -46,14 +46,7 @@ static enum {
     PATHFIND,
     STORAGE,
     DEPOSIT
-} state ;
-
-typedef enum {
-    SCAN, 
-    OBJDETECT,
-    OBJINVESTIGATE, 
-    BOLLARDFOUND 
-} SearchFSM_State;
+} MainFSM_State ;
 
 int main(void) {
     // Both of these only for testing purposes . Not required
@@ -66,7 +59,7 @@ int main(void) {
     UART_Init();
     ADC_Init();
     Ultrasonic_Init();
-    state = IDLE;
+    MainFSM_State = IDLE;
     led_1 = OFF;
     led_2 = OFF;
 
@@ -79,20 +72,20 @@ int main(void) {
         Kobuki_Update_LEDs (led_1 , led_2 );
 
         // A TEST FSM
-        switch(state){
+        switch(MainFSM_State){
             case IDLE:
                 if(kobuki.button == BUTTON_0_START){
-                    state = SEARCH;
+                    MainFSM_State = SEARCH;
                     led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint(kobuki .angle,450);
                     // Kobuki_Drive_Distance_Setpoint ( kobuki.distance ,100) ;
                 } else if ( kobuki.button == BUTTON_1_STOP ){
-                    state = SEARCH ;
+                    MainFSM_State = SEARCH ;
                     led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint ( kobuki .angle, 270) ;
                     // Kobuki_Drive_Distance_Setpoint ( kobuki.distance , -100) ;
                 } else if (kobuki.button == BUTTON_2_ROTATE){
-                    state = SEARCH ;
+                    MainFSM_State = SEARCH ;
                     led_1 = RED;
                     Kobuki_Rotate_Angle_Setpoint ( kobuki .angle , 90);
                     // Kobuki_Drive_Distance_Setpoint ( kobuki . distance ,1000) ;
@@ -104,13 +97,13 @@ int main(void) {
             case SEARCH:
                 // Parent only handles emergencies. Cliff and bumper are handled in search FSM
                 if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    state = IDLE;
+                    MainFSM_State = IDLE;
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 } 
                 // Run SearchFSM each loop. Once it returns SEARCH_DONE, transition to ORIENT state
                 else if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
-                    state = ORIENT;
+                    MainFSM_State = ORIENT;
                     led_1 = GREEN;
                     Kobuki_Drive(STOP);
                 }
@@ -118,7 +111,7 @@ int main(void) {
 
             case ORIENT:
                 if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    state = IDLE;
+                    MainFSM_State = IDLE;
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 }
@@ -126,7 +119,7 @@ int main(void) {
             
             case PATHFIND:
                 if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    state = IDLE;
+                    MainFSM_State = IDLE;
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 }
@@ -134,7 +127,7 @@ int main(void) {
 
             case STORAGE:
                 if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    state = IDLE;
+                    MainFSM_State = IDLE;
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 }
@@ -142,7 +135,7 @@ int main(void) {
 
             case DEPOSIT:
                 if ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP)){
-                    state = IDLE;
+                    MainFSM_State = IDLE;
                     led_1 = YELLOW;
                     Kobuki_Drive(STOP);
                 }
