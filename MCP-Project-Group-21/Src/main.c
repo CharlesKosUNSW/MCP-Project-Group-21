@@ -46,7 +46,7 @@ static enum {
     PATHFIND,
     STORAGE,
     DEPOSIT
-} MainFSM_State ;
+} MainFSM_State;
 
 
 int main(void) {
@@ -121,7 +121,8 @@ int main(void) {
 
                 // Run SearchFSM each loop. Once it returns SEARCH_DONE, transition to ORIENT state
                 if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
-                    MainFSM_State = ORIENT;
+                    //MainFSM_State = ORIENT;
+                    MainFSM_State = PATHFIND;
                     Kobuki_Drive(STOP);
                 }
                 break;

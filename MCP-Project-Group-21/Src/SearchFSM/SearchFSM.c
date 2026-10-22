@@ -4,13 +4,14 @@
 #include "SearchFSM.h"
 
 // Search parameters
-#define INVESTIGATE_DIST_MM     100     // mm. Distance to drive forward to investigate object
-#define DETECT_RANGE_MM         600     // mm. Distance max threshold for object detection 
+#define INVESTIGATE_DIST_MM     200     // mm. Distance to drive forward to investigate object
+#define DETECT_RANGE_MM         700     // mm. Distance max threshold for object detection 
 #define ROUTE_THRESHOLD_MM      475     // mm. Distance threshold for route planning
 #define BOLLARD_TURN_DEG        90      // deg (+ ve is CCW ). 
 #define EXTERNAL_MARGIN_DEG     20      // deg. Extra turn so object is not detected again
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
 #define FULL_TURN_TICK          36000   // Angle wrap , angle is 0.01 deg per tick
+#define MIDPOINT_CAL_DEG        10      // deg. Margin of error for midpoint calculation
 
 // FSM States
 typedef enum {
@@ -84,7 +85,7 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
                 midpoint_angle_ticks = Wrap_Angle(start_angle_ticks + (sweep_angle_ticks/2));
 
                 //Set rotate setpoint to midpoint of sweep, then rotate to that angle
-                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, Wrap_Angle(midpoint_angle_ticks - end_angle_ticks)*DEG_PER_TICK);
+                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, (Wrap_Angle(midpoint_angle_ticks - end_angle_ticks)*DEG_PER_TICK)+MIDPOINT_CAL_DEG);
 
                 // Transition to next state
                 search_state = OBJECT_ALIGN;
