@@ -57,7 +57,7 @@ void SearchFSM_Reset(void) {
 }
 
 // Run one step of search FSM , call every loop while in SEARCH in main FSM
-SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
+SearchFSM_Result SearchFSM_Run(Kobuki_Typedef *kobuki, US_Typedef *object) {
     switch(search_state){
         case SCAN:
             // Rotate until object is within threshold

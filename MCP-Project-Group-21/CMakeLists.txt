@@ -45,7 +45,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   "Src/ADC/ADC.c"
   "Src/Ultrasonic/Ultrasonic.c"
   "Src/SearchFSM/SearchFSM.c"
-  "Src/OrientFSM/OrientFSM.c"
   "Src/PathfindFSM/PathfindFSM.c"
   "Src/StorageFSM/StorageFSM.c"
   "Src/DepositFSM/DepositFSM.c"
@@ -59,7 +58,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   Src/ADC
   Src/Ultrasonic
   Src/SearchFSM
-  Src/OrientFSM
   Src/PathfindFSM
   Src/StorageFSM 
   Src/DepositFSM

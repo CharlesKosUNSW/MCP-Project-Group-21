@@ -24,7 +24,6 @@
 #include "uart.h"
 #include "ultrasonic.h"
 #include "SearchFSM.h"
-#include "OrientFSM.h"
 #include "PathfindFSM.h"
 #include "StorageFSM.h"
 #include "DepositFSM.h"
@@ -39,24 +38,22 @@
 # define TRUE 1
 // States
 
+// Define main FSM states
 static enum {
     IDLE, 
     SEARCH,
-    ORIENT,
     PATHFIND,
     STORAGE,
     DEPOSIT
 } MainFSM_State;
 
-
 int main(void) {
-    // Both of these only for testing purposes . Not required
-    volatile uint16_t ultrasonic_read;
-    volatile uint16_t adc_read;
+    // Initialise variables
     Kobuki_Typedef kobuki ;
     US_Typedef object ;
     Kobuki_LED_Enum led_1 , led_2 ;
 
+    // Initialise peripherals
     UART_Init();
     ADC_Init();
     Ultrasonic_Init();
@@ -65,11 +62,11 @@ int main(void) {
     led_2 = OFF;
 
     while (1){
+        // Read peripheral states
         Kobuki_Read(&kobuki);
         Ultrasonic_Detect(&object);
-        // Both of these only for testing purposes . Not required
-        ultrasonic_read = Ultrasonic_Read ();
-        adc_read = ADC_Read ( ADC_CHANNEL_1 );
+
+        // Update LED's each loop
         Kobuki_Update_LEDs (led_1 , led_2 );
 
         // Emergency stop , applies to every state except IDLE
@@ -78,61 +75,29 @@ int main(void) {
             Kobuki_Drive(STOP);
         }
 
-        // A TEST FSM
+        // Main FSM
         switch(MainFSM_State){
             case IDLE:
-
-                // Set LED's for IDLE state
+                // Set LED's for IDLE state. Sit still waiting for the start button.
                 led_1 = GREEN;
                 led_2 = OFF;
+                Kobuki_Drive(STOP);
 
+                // Transition to SEARCH state. Initialise sub fsm
                 if(kobuki.button == BUTTON_0_START){
-                    SearchFSM_Reset();      // Reset search sub FSM to initial state 
+                    SearchFSM_Reset();      
                     MainFSM_State = SEARCH;
-                } else {
-                    Kobuki_Drive(STOP);
-                }
-
-                /*
-                if(kobuki.button == BUTTON_0_START){
-                    MainFSM_State = SEARCH;
-                    Kobuki_Rotate_Angle_Setpoint(kobuki .angle,450);
-                    // Kobuki_Drive_Distance_Setpoint ( kobuki.distance ,100) ;
-                } else if ( kobuki.button == BUTTON_1_STOP ){
-                    MainFSM_State = SEARCH ;
-                    Kobuki_Rotate_Angle_Setpoint ( kobuki .angle, 270) ;
-                    // Kobuki_Drive_Distance_Setpoint ( kobuki.distance , -100) ;
-                } else if (kobuki.button == BUTTON_2_ROTATE){
-                    MainFSM_State = SEARCH;
-                    Kobuki_Rotate_Angle_Setpoint ( kobuki .angle , 90);
-                    // Kobuki_Drive_Distance_Setpoint ( kobuki . distance ,1000) ;
-                }
-                    else {
-                    Kobuki_Drive(STOP);
-                }*/
-
+                } 
                 break;
 
             case SEARCH:
-
                 // Set LED's for SEARCH state
                 led_1 = YELLOW;
                 led_2 = OFF;
 
                 // Run SearchFSM each loop. Once it returns SEARCH_DONE, transition to ORIENT state
                 if(SearchFSM_Run(&kobuki, &object) == SEARCH_DONE){
-                    //MainFSM_State = ORIENT;
-                    MainFSM_State = PATHFIND;
-                    Kobuki_Drive(STOP);
-                }
-                break;
-
-            case ORIENT:
-                // Set LED's for ORIENT state
-                led_1 = RED;
-                led_2 = OFF;
-
-                if (OrientFSM_Run(&kobuki, &object) == ORIENT_SUCCESS){
+                    PathfindFSM_Reset();
                     MainFSM_State = PATHFIND;
                     Kobuki_Drive(STOP);
                 }
@@ -143,7 +108,8 @@ int main(void) {
                 led_1 = GREEN;
                 led_2 = GREEN;
 
-                if (PathfindFSM_Run(&kobuki, &object) == PATHFIND_DONE){
+                if (PathfindFSM_Run(&kobuki) == PATHFIND_DONE){
+                    StorageFSM_Reset();
                     MainFSM_State = STORAGE;
                     Kobuki_Drive(STOP);
                 }
@@ -170,7 +136,6 @@ int main(void) {
                     Kobuki_Drive(STOP);
                 }
                 break;  
-
         }
     }
 }
