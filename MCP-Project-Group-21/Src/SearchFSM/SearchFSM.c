@@ -4,25 +4,22 @@
 #include "SearchFSM.h"
 
 // Search parameters
-#define INVESTIGATE_DIST_MM     200     // mm. Distance to drive forward to investigate object
 #define DETECT_RANGE_MM         700     // mm. Distance max threshold for object detection 
 #define ROUTE_THRESHOLD_MM      475     // mm. Distance threshold for route planning
 #define BOLLARD_TURN_DEG        90      // deg (+ ve is CCW ). 
-#define EXTERNAL_MARGIN_DEG     20      // deg. Extra turn so object is not detected again
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
 #define FULL_TURN_TICK          36000   // Angle wrap , angle is 0.01 deg per tick
-#define MIDPOINT_CAL_DEG        10      // deg. Margin of error for midpoint calculation
+#define MP_OFFSET_DEG           -20     // deg. Margin of error for midpoint calculation    -10 works
+#define SEARCH_SPEED_FAST       200     // mm/s. Fast search speed                          100 works
+#define ROUTE_A_OFFSET_DEG      -5      // Tuned angle offset for aligning with route A
+#define ROUTE_B_OFFSET_DEG      -5      // Tuned angle offset for aligning with route B
 
 // FSM States
 typedef enum {
     SCAN,
     OBJECT_DETECTED,
     OBJECT_ALIGN,
-    OBJECT_INVESTIGATE,
-    EXTERNAL_REVERSE,
-    EXTERNAL_ROTATE,
-    BOLLARD_REVERSE,
-    BOLLARD_ROTATE,
+    ROUTE_ALIGN,
     SEARCH_EXIT
 } SearchFSM_State;
 
@@ -32,9 +29,7 @@ static int32_t start_angle_ticks;       // angle when object first detected
 static int32_t end_angle_ticks;         // angle when object leaves threshold
 static int32_t sweep_angle_ticks;       // angle swept while object detected
 static int32_t midpoint_angle_ticks;    // midpoint of sweep angle, used to rotate to object
-static int32_t setpoint_angle_ticks;    // angle to rotate to after object detected
-static uint16_t start_distance_ticks;   // distance when investigate started
-static int16_t travelled_dist_mm;       // distance travelled before cliff
+static int32_t mp_rel_angle_deg;        // relative angle of the object in degrees
 static uint16_t range_mm;               // distance to object when detected
 static Course_Route Course;             // current course
 
@@ -66,7 +61,7 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
     switch(search_state){
         case SCAN:
             // Rotate until object is within threshold
-            Kobuki_Rotate(SEARCH_SPEED);
+            Kobuki_Rotate(SEARCH_SPEED_FAST);
             if(object->detected && (object->range_mm < DETECT_RANGE_MM)){
                 start_angle_ticks = kobuki->angle;
                 search_state = OBJECT_DETECTED;
@@ -74,7 +69,10 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
             break;
 
         case OBJECT_DETECTED:
-            // Keep rotating until object leaves threshold or is not detected at all
+            // Rotate at a slower speed
+            Kobuki_Rotate(SEARCH_SPEED);
+
+            // Once object is no longer detected, calculate the midpoint of the object 
             if(!(object->detected) || (object->range_mm >= DETECT_RANGE_MM)) {
                 //Stop rotating
                 Kobuki_Rotate(STOP);
@@ -83,106 +81,48 @@ SearchFSM_Result SearchFSM_Run (Kobuki_Typedef *kobuki, US_Typedef *object) {
                 end_angle_ticks = kobuki->angle;
                 sweep_angle_ticks = Wrap_Angle(end_angle_ticks - start_angle_ticks);
                 midpoint_angle_ticks = Wrap_Angle(start_angle_ticks + (sweep_angle_ticks/2));
+                mp_rel_angle_deg =  (Wrap_Angle(midpoint_angle_ticks - end_angle_ticks)*DEG_PER_TICK)+MP_OFFSET_DEG;
 
                 //Set rotate setpoint to midpoint of sweep, then rotate to that angle
-                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, (Wrap_Angle(midpoint_angle_ticks - end_angle_ticks)*DEG_PER_TICK)+MIDPOINT_CAL_DEG);
+                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, mp_rel_angle_deg);
 
                 // Transition to next state
                 search_state = OBJECT_ALIGN;
-            } else {
-                Kobuki_Rotate(SEARCH_SPEED);
-            }
+            } 
             break;
 
         case OBJECT_ALIGN:
-            // Rotate to the setpoint angle until complete, then transition to investigate state
-            if(!kobuki->rotation_complete) {
-                Kobuki_Rotate_Angle(kobuki->angle);
-            } else {
-                // Once aligned, transition to investigate state
-                range_mm = object->range_mm;
-                start_distance_ticks = kobuki->distance;
-                Kobuki_Drive_Distance_Setpoint(kobuki->distance, INVESTIGATE_DIST_MM);
-                search_state = OBJECT_INVESTIGATE;
-            }
-            break;
+            //Rotate to the object midpoint
+            Kobuki_Rotate_Angle(kobuki->angle);
 
-        case OBJECT_INVESTIGATE:
-            // Move to object. If the robot runs into an object or off a cliff, assume that the object is external
-            if(kobuki->cliff || kobuki->bumper) {
-                // Cliff or wall detected, object is external. Reverse back to original position
-                Kobuki_Drive(STOP);
-                travelled_dist_mm = ( int16_t )(( double )(( uint16_t )( kobuki->distance - start_distance_ticks )) * MM_PER_TICK );
-                Kobuki_Drive_Distance_Setpoint(kobuki->distance , -travelled_dist_mm);
-                search_state = EXTERNAL_REVERSE ;
-            } else if (kobuki->distance_complete == 1){
-                // Determine the course type
+            // Once rotation is complete, transition to next state  
+            if(kobuki->rotation_complete) {
+                Kobuki_Rotate(STOP);
+                // Get the distance to the object
+                range_mm = object->range_mm;
+
                 if (range_mm > ROUTE_THRESHOLD_MM){
                     Course = ROUTE_A;
+                    Kobuki_Rotate_Angle_Setpoint(kobuki->angle, -(BOLLARD_TURN_DEG+ROUTE_A_OFFSET_DEG));
                 } else {
                     Course = ROUTE_B;
+                    Kobuki_Rotate_Angle_Setpoint(kobuki->angle, (BOLLARD_TURN_DEG+ROUTE_B_OFFSET_DEG));
                 }
-
-                // Object is bollard. Reverse back to original position
-                Kobuki_Drive_Distance_Setpoint(kobuki->distance , -INVESTIGATE_DIST_MM);
-                search_state = BOLLARD_REVERSE;
-            } 
-            // Keep driving to setpoint
-            else {
-                Kobuki_Drive_Distance(kobuki->distance);
+                search_state = ROUTE_ALIGN;
             }
             break;
 
-        case EXTERNAL_REVERSE:
-            // Reverse back to point of rotation. Set to rotate away from the external object.
-            if(!(kobuki->distance_complete)){
-                //Keep reversing to setpoint
-                Kobuki_Drive_Distance(kobuki->distance);    
-            } else {
-                // Reverse complete. Set rotation point to drive away from the bollard
-                setpoint_angle_ticks = Wrap_Angle(midpoint_angle_ticks + (sweep_angle_ticks/2));
-                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, Wrap_Angle(setpoint_angle_ticks - kobuki->angle)*DEG_PER_TICK + EXTERNAL_MARGIN_DEG);
-                search_state = EXTERNAL_ROTATE ;    
-            }
-            break;
-
-        case EXTERNAL_ROTATE:
-            // Rotate additional amount , then back to scan
-            if(!(kobuki->rotation_complete)){
-                Kobuki_Rotate_Angle(kobuki->angle);
-            } else {
-                search_state = SCAN ;
-            }
-            break;
-
-        case BOLLARD_REVERSE:
-            // Reverse back to point of rotation. Once complete, rotate to the side of the bollard.
-            if(!(kobuki->distance_complete)){
-                //Keep reversing to setpoint
-                Kobuki_Drive_Distance(kobuki->distance);    
-            } else {
-                // Reverse complete. Set rotation point to drive away from the bollard
-                if (Course == ROUTE_A){
-                    Kobuki_Rotate_Angle_Setpoint(kobuki->angle, -BOLLARD_TURN_DEG);
-                } else {
-                    Kobuki_Rotate_Angle_Setpoint(kobuki->angle, BOLLARD_TURN_DEG);
-                }
-                search_state = BOLLARD_ROTATE ;    
-            }
-            break;
-
-        case BOLLARD_ROTATE:
-            // Rotate away from the bollard. Exit search FSM once complete.
-            if(!(kobuki->rotation_complete)){
-                Kobuki_Rotate_Angle(kobuki->angle);
-            } else {
+        case ROUTE_ALIGN:
+            Kobuki_Rotate_Angle(kobuki->angle);
+            if (kobuki->rotation_complete) {
+                Kobuki_Rotate(STOP);
                 search_state = SEARCH_EXIT;
             }
             break;
 
         case SEARCH_EXIT:
             // Exit search FSM
-            Kobuki_Drive(STOP);
+            Kobuki_Rotate(STOP);
             return SEARCH_DONE;
     }
 

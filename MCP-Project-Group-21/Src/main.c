@@ -154,7 +154,7 @@ int main(void) {
                 led_1 = YELLOW;
                 led_2 = YELLOW;
 
-                if (StorageFSM_Run(&kobuki, &object) == STORAGE_DONE){
+                if (StorageFSM_Run(&kobuki) == STORAGE_DONE){
                     MainFSM_State = DEPOSIT;
                     Kobuki_Drive(STOP);
                 }
