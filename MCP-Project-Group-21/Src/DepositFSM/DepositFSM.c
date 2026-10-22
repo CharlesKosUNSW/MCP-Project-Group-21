@@ -17,7 +17,6 @@ typedef enum {
     SCAN,
     OBJECT_DETECTED,
     OBJECT_ALIGN,
-    TURN_AROUND,
     DRIVE_TO_DEPOSIT,
     SEARCH_EXIT
 } DepositFSM_State;
@@ -78,25 +77,14 @@ DepositFSM_Result DepositFSM_Run(Kobuki_Typedef *kobuki , US_Typedef *object ) {
                 Kobuki_Rotate(STOP);
                 // Get the distance to the object.
                 range_mm = object->range_mm;
-                //Kobuki_Drive_Distance_Setpoint(kobuki->distance,range_mm);
-                Kobuki_Rotate_Angle_Setpoint(kobuki->angle, TURN_AROUND_DEG);
-                deposit_state = TURN_AROUND;
-            }
-            break;
-
-        case TURN_AROUND:
-            Kobuki_Rotate_Angle(kobuki->angle);
-
-            if(kobuki->rotation_complete) {
-                //Kobuki_Drive_Distance_Setpoint(kobuki->distance,range_mm);
-                
+                Kobuki_Drive_Distance_Setpoint(kobuki->distance,range_mm);
                 deposit_state = DRIVE_TO_DEPOSIT;
             }
             break;
 
         case DRIVE_TO_DEPOSIT:
-            // Drive until we run into the wall.
-            Kobuki_Drive(SPEED_LIMIT);
+            // Drive until we run into the bollard.
+            Kobuki_Drive_Distance(kobuki->distance);
             if (kobuki->bumper) {
                 Kobuki_Drive(STOP);
                 deposit_state = SEARCH_EXIT;    

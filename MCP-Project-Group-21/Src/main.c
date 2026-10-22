@@ -72,6 +72,7 @@ int main(void) {
         // Emergency stop , applies to every state except IDLE
         if ((MainFSM_State != IDLE) && ((kobuki.wheeldrop != FALSE) || (kobuki.button == BUTTON_1_STOP))){
             MainFSM_State = IDLE;
+            
             Kobuki_Drive(STOP);
         }
 
