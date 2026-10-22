@@ -10,7 +10,6 @@
 #define SEARCH_SPEED_FAST       200     // mm/s. Fast search speed                          100 works
 #define ROUTE_A_OFFSET_DEG      -5      // Tuned angle offset for aligning with route A
 #define ROUTE_B_OFFSET_DEG      -5      // Tuned angle offset for aligning with route B
-#define TURN_AROUND_DEG         180
 
 // FSM States
 typedef enum {
@@ -90,6 +89,7 @@ DepositFSM_Result DepositFSM_Run(Kobuki_Typedef *kobuki , US_Typedef *object ) {
                 deposit_state = SEARCH_EXIT;    
             }
             break;
+
         case SEARCH_EXIT:
             return DEPOSIT_DONE;
             break;
