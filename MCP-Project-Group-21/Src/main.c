@@ -122,6 +122,7 @@ int main(void) {
                 led_2 = YELLOW;
 
                 if (StorageFSM_Run(&kobuki) == STORAGE_DONE){
+                    DepositFSM_Reset();
                     MainFSM_State = DEPOSIT;
                     Kobuki_Drive(STOP);
                 }
