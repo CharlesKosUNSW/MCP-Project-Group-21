@@ -3,7 +3,7 @@
 #include "StorageFSM.h"
 
 // Storage parameters
-#define STORAGE_DRIVE_DIST_MM   1000    // mm. Distance to drive into storage
+#define STORAGE_DRIVE_DIST_MM   700    // mm. Distance to drive into storage. Changed from 1000
 
 // FSM States
 typedef enum {
