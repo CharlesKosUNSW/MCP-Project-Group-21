@@ -1,13 +1,14 @@
 #include "DepositFSM.h"
 
 // Deposit parameters
-#define DETECT_RANGE_MM         700     // mm. Distance max threshold for object detection
+#define DETECT_RANGE_MM         500     // mm. Distance max threshold for object detection
 #define SWEEP_HALF_DEG          90      // deg. Only sweep +/- this either side of the entry heading
 #define SWEEP_HALF_TICK         (SWEEP_HALF_DEG * 100)
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
 #define FULL_TURN_TICK          36000   // Angle wrap , angle is 0.01 deg per tick
-#define MP_OFFSET_DEG           -10     // deg. Midpoint correction for sensor lag. Retune , both edges now at SEARCH_SPEED
-#define STOP_DIST_MM            100     // mm. Required gap between robot and deposit marker
+#define MP_OFFSET_DEG           -20     // deg. Midpoint correction for sensor lag. Retune , both edges now at SEARCH_SPEED
+#define STOP_DIST_MM            300     // mm. Required gap between robot and deposit marker
+#define DRIVE_DEFAULT           50      //mm
 
 // FSM States
 typedef enum {

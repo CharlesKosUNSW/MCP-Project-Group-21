@@ -3,9 +3,11 @@
 #include "ultrasonic.h"
 #include "SearchFSM.h"
 
+// Param tuning
+
 // Search parameters
 #define DETECT_RANGE_MM         700     // mm. Distance max threshold for object detection 
-#define ROUTE_THRESHOLD_MM      475     // mm. Distance threshold for route planning
+#define ROUTE_THRESHOLD_MM      500     // mm. Distance threshold for route planning
 #define BOLLARD_TURN_DEG        90      // deg (+ ve is CCW ). 
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
 #define FULL_TURN_TICK          36000   // Angle wrap , angle is 0.01 deg per tick
