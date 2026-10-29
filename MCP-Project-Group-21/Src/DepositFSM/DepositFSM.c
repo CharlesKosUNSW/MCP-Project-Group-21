@@ -1,4 +1,5 @@
 #include "DepositFSM.h"
+#include "kobuki.h"
 
 // Deposit parameters
 #define DETECT_RANGE_MM         550     // mm. Distance max threshold for object detection
@@ -6,10 +7,9 @@
 #define SWEEP_HALF_TICK         (SWEEP_HALF_DEG * 100)
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
 #define FULL_TURN_TICK          36000   // Angle wrap , angle is 0.01 deg per tick
-#define MP_OFFSET_DEG           -10     // deg. Midpoint correction for sensor lag. Retune , both edges now at SEARCH_SPEED
+#define DEP_MP_OFFSET_DEG       -10     // deg. Midpoint correction for sensor lag. Retune , both edges now at SEARCH_SPEED
 #define STOP_DIST_MM            300     // mm. Required gap between robot and deposit marker
 #define DRIVE_DEFAULT           50      //mm
-
 // FSM States
 typedef enum {
     SWEEP_START,
@@ -92,9 +92,10 @@ DepositFSM_Result DepositFSM_Run(Kobuki_Typedef *kobuki , US_Typedef *object ) {
         case OBJECT_DETECTED:
             // Keep rotating at the same speed until the object leaves threshold
             Kobuki_Rotate(SEARCH_SPEED);
+            bearing_ticks = Wrap_Angle(kobuki->angle - entry_angle_ticks);
 
             // Once object is no longer detected, calculate the midpoint of the object
-            if(!(object->detected) || (object->range_mm >= DETECT_RANGE_MM)) {
+            if(!(object->detected) || (object->range_mm >= DETECT_RANGE_MM) || (bearing_ticks > SWEEP_HALF_TICK)) {
                 //Stop rotating
                 Kobuki_Rotate(STOP);
 
@@ -102,7 +103,7 @@ DepositFSM_Result DepositFSM_Run(Kobuki_Typedef *kobuki , US_Typedef *object ) {
                 end_angle_ticks = kobuki->angle;
                 sweep_angle_ticks = Wrap_Angle(end_angle_ticks - start_angle_ticks);
                 midpoint_angle_ticks = Wrap_Angle(start_angle_ticks + (sweep_angle_ticks/2));
-                mp_rel_angle_deg = (Wrap_Angle(midpoint_angle_ticks - end_angle_ticks)*DEG_PER_TICK)+MP_OFFSET_DEG;
+                mp_rel_angle_deg = (Wrap_Angle(midpoint_angle_ticks - end_angle_ticks)*DEG_PER_TICK)+DEP_MP_OFFSET_DEG;
 
                 //Set rotate setpoint to midpoint of sweep, then rotate to that angle
                 Kobuki_Rotate_Angle_Setpoint(kobuki->angle, mp_rel_angle_deg);
