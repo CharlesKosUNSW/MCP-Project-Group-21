@@ -49,9 +49,9 @@ static enum {
 
 int main(void) {
     // Initialise variables
-    Kobuki_Typedef kobuki ;
-    US_Typedef object ;
-    Kobuki_LED_Enum led_1 , led_2 ;
+    Kobuki_Typedef kobuki;
+    US_Typedef object;
+    Kobuki_LED_Enum led_1 , led_2;
 
     // Initialise peripherals
     UART_Init();
@@ -88,6 +88,8 @@ int main(void) {
                 if(kobuki.button == BUTTON_0_START){
                     SearchFSM_Reset();      
                     MainFSM_State = SEARCH;
+                    //StorageFSM_Reset();
+                    //MainFSM_State = STORAGE;
                 } 
                 break;
 

@@ -11,10 +11,10 @@
 #define BOLLARD_TURN_DEG        90      // deg (+ ve is CCW ). 
 #define HALF_TURN_TICK          18000   // Angle wrap , angle is 0.01 deg per tick
 #define FULL_TURN_TICK          36000   // Angle wrap , angle is 0.01 deg per tick
-#define MP_OFFSET_DEG           -10     // deg. Margin of error for midpoint calculation    -10 works
+#define MP_OFFSET_DEG           -20     // deg. Margin of error for midpoint calculation    -10 works
 #define SEARCH_SPEED_FAST       200     // mm/s. Fast search speed                          100 works
-#define ROUTE_A_OFFSET_DEG      -5       // Tuned angle offset for aligning with route A
-#define ROUTE_B_OFFSET_DEG      -5       // Tuned angle offset for aligning with route B
+#define ROUTE_A_OFFSET_DEG      -2       // Tuned angle offset for aligning with route A
+#define ROUTE_B_OFFSET_DEG      -2       // Tuned angle offset for aligning with route B
 
 // FSM States
 typedef enum {
