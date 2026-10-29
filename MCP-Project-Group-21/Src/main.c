@@ -88,8 +88,6 @@ int main(void) {
                 if(kobuki.button == BUTTON_0_START){
                     SearchFSM_Reset();      
                     MainFSM_State = SEARCH;
-                    //StorageFSM_Reset();
-                    //MainFSM_State = STORAGE;
                 } 
                 break;
 
